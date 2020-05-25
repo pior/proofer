@@ -8,3 +8,4 @@ My COVID-19 project.
 
 Evolutions:
 - Reversible design with Peltier module
+- detecting the height of the dough (rise monitoring) [example](https://github.com/bwhitman/bread-detector)
