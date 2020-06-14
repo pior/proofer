@@ -7,7 +7,7 @@ inline String tempAsString(float temp) {
 
 class TempLogger {
   private:
-    const unsigned int historyPeriodMs = 10000;
+    const unsigned int historyPeriodMs = 30 * 1000;
 
     float current, minimum, maximum;
     CircularBuffer<float,114> history;

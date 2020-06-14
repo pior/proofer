@@ -20,7 +20,7 @@ class Control {
 
     float setPoint = 25;
     const int setPointMin = 24;
-    const int setPointMax = 30;
+    const int setPointMax = 32;
 
     uint16_t output = 0;
 
