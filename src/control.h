@@ -2,13 +2,13 @@
 
 const int HEATER_PIN = 16;
 
-MiniPID pid = MiniPID(500,300,200);
+MiniPID pid = MiniPID(100, 2, 500); // in %
 
 void setupControl() {
   pinMode(HEATER_PIN, OUTPUT);
   analogWrite(HEATER_PIN, 0);
 
-  pid.setOutputLimits(0, PWMRANGE);
+  pid.setOutputLimits(-100, 100); // specify a symmetrical output to avoid resetting errorSum when output is negative.
 }
 
 class Control {
@@ -48,7 +48,7 @@ class Control {
 
     int PowerPct() {
       if (enabled) {
-        return output * 100 / PWMRANGE;
+        return output;
       }
 
       return 0;
@@ -57,16 +57,19 @@ class Control {
     void Refresh(float currentTemp) {
       output = pid.getOutput(currentTemp, setPoint);
 
-      if ((setPoint - currentTemp) > 1) { // 100% ON when 1ºC below
-        output = PWMRANGE;
-      }
+      if (output < 0) { output = 0; }
+
+
+      // if ((setPoint - currentTemp) > 1) { // 100% ON when 1ºC below
+      //   output = 100;
+      // }
 
       setOutput();
     }
 
   private:
     void setOutput() {
-      analogWrite(HEATER_PIN, enabled ? output : 0);
+      analogWrite(HEATER_PIN, enabled ? (output * PWMRANGE / 100) : 0);
     }
 };
 

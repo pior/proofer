@@ -63,7 +63,7 @@ void updateEMATemp(float current) {
   }
 
   // https://www.investopedia.com/ask/answers/122314/what-exponential-moving-average-ema-formula-and-how-ema-calculated.asp
-  float n = 50;
+  float n = 60;
   float k = 2 / (n + 1);
   EMATemp = current * k + EMATemp * (1 - k);
 }
@@ -74,9 +74,13 @@ void taskMeasureCallback() {
   tempLog.Update(current);
 
   updateEMATemp(current);
-  control.Refresh(EMATemp);
 }
 Task taskMeasure(500, TASK_FOREVER, &taskMeasureCallback);
+
+void taskPIDCallback() {
+  control.Refresh(EMATemp);
+}
+Task taskPID(5000, TASK_FOREVER, &taskPIDCallback);
 
 void taskDisplayCallback() {
   display.Update(tempLog, control.Enabled(), control.PowerPct(), control.Temp());
@@ -105,6 +109,7 @@ void setup() {
   ts.init();
   ts.addTask(taskMeasure);
   ts.addTask(taskDisplay);
+  ts.addTask(taskPID);
   ts.enableAll();
 
   Serial.println("Started.");

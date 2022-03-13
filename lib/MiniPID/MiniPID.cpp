@@ -197,6 +197,7 @@ double MiniPID::getOutput(double actual, double setpoint){
 
 	//Do the simple parts of the calculations
 	double error=setpoint-actual;
+	double errorDelta = actual-lastActual; lastActual=actual;
 
 	//Calculate F output. Notice, this->depends only on the setpoint, and not the error.
 	Foutput=F*setpoint;
@@ -215,46 +216,47 @@ double MiniPID::getOutput(double actual, double setpoint){
 
 
 	//Calculate D Term
-	//Note, this->is negative. this->actually "slows" the system if it's doing
+	//Note, this is negative. this actually "slows" the system if it's doing
 	//the correct thing, and small values helps prevent output spikes and overshoot
-
-	Doutput= -D*(actual-lastActual);
-	lastActual=actual;
-
-
+	Doutput=-D*errorDelta;
 
 	//The Iterm is more complex. There's several things to factor in to make it easier to deal with.
 	// 1. maxIoutput restricts the amount of output contributed by the Iterm.
 	// 2. prevent windup by not increasing errorSum if we're already running against our max Ioutput
 	// 3. prevent windup by not increasing errorSum if output is output=maxOutput
 	Ioutput=I*errorSum;
-	if(maxIOutput!=0){
-		Ioutput=clamp(Ioutput,-maxIOutput,maxIOutput);
-	}
-
-	Serial.printf("PID: input=%.1f error=%f Pterm=%.0f Iterm=%.0f Dterm=%.0f errorSum=%.2f output=%.0f\n", actual, error, Poutput, Ioutput, Doutput, errorSum, output);
+	// if(maxIOutput!=0){
+	// 	Ioutput=clamp(Ioutput,-maxIOutput,maxIOutput);
+	// }
 
 	//And, finally, we can just add the terms up
 	output=Foutput + Poutput + Ioutput + Doutput;
 
-	//Figure out what we're doing with the error.
-	if(minOutput!=maxOutput && !bounded(output, minOutput,maxOutput) ){
-		// errorSum=error;
-		// reset the error sum to a sane level
-		// Setting to current error ensures a smooth transition when the P term
-		// decreases enough for the I term to start acting upon the controller
-		// From that point the I term will build up as would be expected
-	}
-	else if(outputRampRate!=0 && !bounded(output, lastOutput-outputRampRate,lastOutput+outputRampRate) ){
-		// errorSum=error;
-	}
-	else if(maxIOutput!=0){
-		errorSum=clamp(errorSum+error,-maxError,maxError);
-		// In addition to output limiting directly, we also want to prevent I term
-		// buildup, so restrict the error directly
-	}
-	else{
-		errorSum+=error;
+	Serial.printf("PID: input=%.3f [error=%.3f sum=%.3f delta=%0.3f] [P=%.0f I=%.0f D=%.0f] OUTPUT=%.0f\n", actual, error, errorSum, errorDelta, Poutput, Ioutput, Doutput, output);
+
+	// //Figure out what we're doing with the error.
+	// if(minOutput!=maxOutput && !bounded(output, minOutput, maxOutput) ){
+	// 	Serial.printf("PID: Poutput reach bounds, clamping errorSum to output limits / I\n");
+	// 	errorSum=clamp(errorSum, minOutput/I, maxOutput/I);
+	// 	// reset the error sum to a sane level
+	// 	// Setting to current error ensures a smooth transition when the P term
+	// 	// decreases enough for the I term to start acting upon the controller
+	// 	// From that point the I term will build up as would be expected
+	// }
+	// // else if(outputRampRate!=0 && !bounded(output, lastOutput-outputRampRate,lastOutput+outputRampRate) ){
+	// // 	// errorSum=error;
+	// // }
+	// // else if(maxIOutput!=0){
+	// // 	errorSum=clamp(errorSum+error,-maxError,maxError);
+	// // 	// In addition to output limiting directly, we also want to prevent I term
+	// // 	// buildup, so restrict the error directly
+	// // }
+	// else{
+	// 	errorSum+=error;
+	// }
+	errorSum+=error;
+	if(minOutput!=maxOutput) {
+		errorSum=clamp(errorSum, minOutput/I, maxOutput/I);
 	}
 
 	//Restrict output to our specified output and ramp limits
