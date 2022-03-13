@@ -53,10 +53,28 @@ void buttonHandler(AceButton* button, uint8_t eventType, uint8_t buttonState) {
 
 // Tasks
 
+bool EMATempInitialized = false;
+float EMATemp; // Exponential Moving Average
+
+void updateEMATemp(float current) {
+  if (!EMATempInitialized) {
+    EMATemp = current;
+    EMATempInitialized = true;
+  }
+
+  // https://www.investopedia.com/ask/answers/122314/what-exponential-moving-average-ema-formula-and-how-ema-calculated.asp
+  float n = 50;
+  float k = 2 / (n + 1);
+  EMATemp = current * k + EMATemp * (1 - k);
+}
+
 void taskMeasureCallback() {
   auto current = temp.Read();
+
   tempLog.Update(current);
-  control.Refresh(current);
+
+  updateEMATemp(current);
+  control.Refresh(EMATemp);
 }
 Task taskMeasure(500, TASK_FOREVER, &taskMeasureCallback);
 
